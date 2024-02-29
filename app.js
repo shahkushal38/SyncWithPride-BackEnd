@@ -1,19 +1,18 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-require("dotenv").config();
 
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 
+require("dotenv").config();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-
-const db = 'mongodb+srv://Krutika:krutika@cluster0.qpk2hnh.mongodb.net/database';
+const db = process.env.DB;
 
 mongoose.connect(db, {
 }).then(()=> {
@@ -23,25 +22,26 @@ mongoose.connect(db, {
 })
 
 
-const Users = require('./model/schema1');
-const { user } = require("./model/maindb");
+const Users = require('./model/userSchema');
+
+const Booking = require("./model/bookingSchema");
 
 
 //login api started
 
 app.post('/login', async (req, res)=>{
 
-  const { username, password, email, branch, tokens} = req.body;
+  const { username, password, email, branch } = req.body;
   let token;
 
   if(!username || !password || !email || !branch){
-    return res.status(422).json({error:"fill field properly"});
+    return res.status(400).json({error:"fill field properly"});
   }
 
 
    Users.findOne({ email: email}).then((userExist)=>{
     if(userExist){
-        return res.status(422).json({error: "Email already exists"});
+        return res.status(400).json({error: "Email already exists"});
     }
     
 
@@ -49,12 +49,12 @@ app.post('/login', async (req, res)=>{
 
 
     //generate token
-    token = jwt.sign({_id: this._id, email: this.email}, process.env.SECRET_TOKEN, {expiresIn: "30s"});
+    token = jwt.sign({_id: this._id, email: this.email}, process.env.SECRET_TOKEN, {expiresIn: "24h"});
     
 
     user.save().then(()=>{
-      res.status(201).json({message: "user registered successfully ", token});
-    }).catch((err)=> res.status(500).json({error: "failed to register user"}))
+      res.status(200).json({message: "user logged in successfully ", token});
+    }).catch((err)=> res.status(400).json({error: "failed to log in user"}))
   }).catch(err => {console.log(err);});
 
   
@@ -74,12 +74,54 @@ app.get('/profile', async (req, res)=>{
       res.status(200).json(profile);
       
     } catch(err){
-        res.status(500).json({error: "failed to display profile"});
-        console.log('error', err);
+        res.status(400).json({error: "failed to display profile"});
     }
 })
 
 //get profile api ended
+
+
+
+//booking api started
+
+
+app.post('/booking', async (req, res)=>{
+  const {username, email, branch, date, deskNo} = req.body;
+
+   Users.findOne({ email: email}).then((userExist)=>{
+  
+    if(userExist){
+      const bookings = new Booking({username, email, branch, date, deskNo});
+
+      bookings.save();
+      
+      res.status(200).json({message: "booked successfully"});
+    }
+    else{
+      res.status(400).json({error: "user does not exist"});
+    }
+  
+});
+
+})
+
+//booking api ended
+
+
+//get booked users list api started
+
+app.get('/userlist', async (req, res)=>{
+  const email = req.body.email;
+  try{
+    const userlist = await Booking.findOne({ email : email});
+    res.status(200).json(userlist);
+  }
+  catch(err){
+    res.status(400).json({error: "failed to display userlist"});
+  }
+})
+
+//get booked users list api ended
 
 
 app.listen(port, () => {
