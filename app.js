@@ -24,7 +24,7 @@ mongoose.connect(db, {
 
 const Users = require('./model/userSchema');
 
-const Booking = require("./model/bookingSchema");
+
 
 
 //login api started
@@ -80,48 +80,6 @@ app.get('/profile', async (req, res)=>{
 
 //get profile api ended
 
-
-
-//booking api started
-
-
-app.post('/booking', async (req, res)=>{
-  const {username, email, branch, date, deskNo} = req.body;
-
-   Users.findOne({ email: email}).then((userExist)=>{
-  
-    if(userExist){
-      const bookings = new Booking({username, email, branch, date, deskNo});
-
-      bookings.save();
-      
-      res.status(200).json({message: "booked successfully"});
-    }
-    else{
-      res.status(400).json({error: "user does not exist"});
-    }
-  
-});
-
-})
-
-//booking api ended
-
-
-//get booked users list api started
-
-app.get('/userlist', async (req, res)=>{
-  const email = req.body.email;
-  try{
-    const userlist = await Booking.findOne({ email : email});
-    res.status(200).json(userlist);
-  }
-  catch(err){
-    res.status(400).json({error: "failed to display userlist"});
-  }
-})
-
-//get booked users list api ended
 
 
 app.listen(port, () => {
