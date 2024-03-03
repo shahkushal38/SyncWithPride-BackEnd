@@ -72,6 +72,10 @@ app.get('/login', async (req, res)=>{
   let token;
 
   try{
+    if(!username || !password ){
+      return res.status(400).json({error:"fill field properly"});
+    }
+    
     const checkUser = await Users.findOne({ email: email, password: password});
     if(!checkUser){
       res.status(400).json({error: "Invalid Credentials"});
