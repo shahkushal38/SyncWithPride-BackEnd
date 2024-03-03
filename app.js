@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-
+const cors= require("cors");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 
@@ -11,6 +11,7 @@ const port = process.env.PORT;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(cors());
 
 const db = process.env.DB;
 
@@ -25,40 +26,71 @@ mongoose.connect(db, {
 const Users = require('./model/userSchema');
 
 const Booking = require("./model/bookingSchema");
+const { user } = require("./model/maindb");
+
+
+//registration api for registering new user
+
+app.post('/registration', async (req, res)=>{
+
+  const { username, password, email, branch } = req.body;
+  try{
+    if(!username || !password || !email || !branch){
+      return res.status(400).json({error:"fill field properly"});
+    }
+  
+     const userExist = await Users.findOne({ email: email});
+      if(userExist){
+          return res.status(400).json({error: "It seems you alreaqdy have an account"});
+      }
+      
+      const user = new Users({username, password, email, branch});
+    
+      await user.save();
+      res.status(200).json({message: "user registered successfully "});
+
+
+}catch(err){
+   res.status(400).json({error: "failed to register user"})
+}
+  
+    
+})
+
+//registration api ended
+
+
+
 
 
 //login api started
 
-app.post('/login', async (req, res)=>{
+app.get('/login', async (req, res)=>{
 
-  const { username, password, email, branch } = req.body;
+  const {email, password} = req.body;
+  
   let token;
 
-  if(!username || !password || !email || !branch){
-    return res.status(400).json({error:"fill field properly"});
-  }
-
-
-   Users.findOne({ email: email}).then((userExist)=>{
-    if(userExist){
-        return res.status(400).json({error: "Email already exists"});
+  try{
+    const checkUser = await Users.findOne({ email: email, password: password});
+    if(!checkUser){
+      res.status(400).json({error: "Invalid Credentials"});
     }
-    
-
-    const user = new Users({username, password, email, branch});
-
-
-    //generate token
-    token = jwt.sign({_id: this._id, email: this.email}, process.env.SECRET_TOKEN, {expiresIn: "24h"});
-    
-
-    user.save().then(()=>{
-      res.status(200).json({message: "user logged in successfully ", token});
-    }).catch((err)=> res.status(400).json({error: "failed to log in user"}))
-  }).catch(err => {console.log(err);});
+    else{
+      token = jwt.sign({_id: this._id, email: this.email}, process.env.SECRET_TOKEN, {expiresIn: "24h"});
+      
+      res.status(200).json({
+        message: "You logged in successfully ",
+        token: token,
+      });
+    }
 
   
-  
+ }
+  catch(error){
+    res.status(400).json({error: "failed to log in user"})
+  }
+   
 })
 
 //login api ended
@@ -88,7 +120,7 @@ app.get('/profile', async (req, res)=>{
 app.post('/booking', async (req, res)=>{
   const {username, email, branch, date, deskNo} = req.body;
 
-   Users.findOne({ email: email}).then((userExist)=>{
+   await Users.findOne({ email: email}).then((userExist)=>{
   
     if(userExist){
       const bookings = new Booking({username, email, branch, date, deskNo});
