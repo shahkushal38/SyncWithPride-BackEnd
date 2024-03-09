@@ -6,8 +6,9 @@ const db = {};
 
 db.mongoose = mongoose;
 
-db.user = require("./userSchema")
+db.user = require("./userSchema");
 
+db.booking = require("./bookingSchema");
 
 module.exports = db;
 
