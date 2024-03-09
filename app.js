@@ -26,7 +26,7 @@ mongoose.connect(db, {
 const Users = require('./model/userSchema');
 
 const Booking = require("./model/bookingSchema");
-const { user } = require("./model/maindb");
+const { user, booking } = require("./model/maindb");
 
 
 //registration api for registering new user
@@ -68,15 +68,15 @@ app.post('/registration', async (req, res)=>{
 app.get('/login', async (req, res)=>{
 
   const {email, password} = req.body;
-  
+
   let token;
 
   try{
-    if(!username || !password ){
+    if(!email || !password ){
       return res.status(400).json({error:"fill field properly"});
     }
     
-    const checkUser = await Users.findOne({ email: email, password: password});
+    const checkUser = await Users.findOne({ email: email, password: password });
     if(!checkUser){
       res.status(400).json({error: "Invalid Credentials"});
     }
@@ -85,7 +85,12 @@ app.get('/login', async (req, res)=>{
       
       res.status(200).json({
         message: "You logged in successfully ",
-        token: token,
+        data:{
+          email: email,
+          username: checkUser.username,
+          token: token
+          
+        }
       });
     }
 
@@ -122,16 +127,25 @@ app.get('/profile', async (req, res)=>{
 
 
 app.post('/booking', async (req, res)=>{
-  const {username, email, branch, date, deskNo} = req.body;
+  const {username, email, branch, date, slot, deskNo} = req.body;
 
-   await Users.findOne({ email: email}).then((userExist)=>{
+   await Users.findOne({ email: email, username: username }).then((userExist)=>{
   
     if(userExist){
-      const bookings = new Booking({username, email, branch, date, deskNo});
 
-      bookings.save();
+      const checkduplicateBooking = Booking.findOne({date: date, slot: slot, deskNo: deskNo });
+      if(!checkduplicateBooking){
+        
+        const bookings = new Booking({username, email, branch, date, slot, deskNo});
+
+        bookings.save();
       
-      res.status(200).json({message: "booked successfully"});
+        res.status(200).json({message: "booked successfully"});
+
+      }else{
+        res.status(400).json({error: "This desk is already booked at this slot"});
+      }
+
     }
     else{
       res.status(400).json({error: "user does not exist"});

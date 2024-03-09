@@ -18,6 +18,10 @@ const bookingSchema = new mongoose.Schema({
         default: Date.now(),
         required:true
     },
+    slot:{
+        type: String,
+        required: true
+    },
     deskNo:{
         type: String,
         required: true
