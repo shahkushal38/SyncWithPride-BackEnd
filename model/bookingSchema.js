@@ -15,18 +15,17 @@ const bookingSchema = new mongoose.Schema({
     },
     date:{
         type: Date,
-        default: Date.now(),
         required:true
     },
     slot:{
         type: String,
         required: true
     },
-    deskNo:{
+    deskNo:
+    {
         type: String,
         required: true
     }
-
 })
 
 const Booking = mongoose.model('BOOKING', bookingSchema);
