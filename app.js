@@ -65,7 +65,7 @@ app.post('/registration', async (req, res)=>{
 
 //login api started
 
-app.get('/login', async (req, res)=>{
+app.post('/login', async (req, res)=>{
 
   const {email, password} = req.body;
 
@@ -93,8 +93,7 @@ app.get('/login', async (req, res)=>{
         }
       });
     }
-
-  
+ 
  }
   catch(error){
     res.status(400).json({error: "failed to log in user"})
@@ -123,39 +122,60 @@ app.get('/profile', async (req, res)=>{
 
 
 
-//booking api started
 
+
+//get booked desks api started
+
+app.get('/getBookedDesks', async (req, res)=>{
+  const {date, slot } = req.body;
+  try{
+    const getBookedDesks = await Booking.find({date: date, slot: slot});
+    if(getBookedDesks){
+      const bookedArr = [];
+      getBookedDesks.forEach(doc => bookedArr.push(doc.deskNo));
+      res.status(200).json(bookedArr);
+    }
+  }
+  catch(err){
+    res.status(400).json({error:"error in showing desks"})
+  }
+})
+
+
+//get booked desks api ended
+
+
+
+
+//booking api started
 
 app.post('/booking', async (req, res)=>{
   const {username, email, branch, date, slot, deskNo} = req.body;
+  try{
+        const checkbooking = await Booking.findOne({ deskNo: deskNo, slot: slot, date: date});
+        if(checkbooking){
+          res.status(400).json({error: "This desk is already booked at this slot"});
+        }
+        else{
+          const userExist = await Users.findOne({ email: email, username: username });
+          if(userExist){
 
-   await Users.findOne({ email: email, username: username }).then((userExist)=>{
-  
-    if(userExist){
-
-      const checkduplicateBooking = Booking.findOne({date: date, slot: slot, deskNo: deskNo });
-      if(!checkduplicateBooking){
-        
-        const bookings = new Booking({username, email, branch, date, slot, deskNo});
-
-        bookings.save();
+            const bookings = new Booking({username, email, branch, date, slot, deskNo});
       
-        res.status(200).json({message: "booked successfully"});
-
-      }else{
-        res.status(400).json({error: "This desk is already booked at this slot"});
+            bookings.save();
+            
+            res.status(200).json({message: "booked successfully"});
+        }
       }
-
     }
-    else{
+    catch(err){
       res.status(400).json({error: "user does not exist"});
     }
-  
-});
 
 })
 
 //booking api ended
+
 
 
 //get booked users list api started
